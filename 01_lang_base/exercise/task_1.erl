@@ -7,7 +7,9 @@
 
 %% Check is Val in range [From, To], both edges included
 is_in_range(Val, Left, Right) ->
-    false.
+    if Val >= Left andalso Val =< Right -> true
+    ; Val < Left orelse Val > Right -> false
+    end.
 
 is_in_range_test() ->
     ?assertEqual(true, is_in_range(5, 2, 10)),
