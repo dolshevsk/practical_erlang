@@ -60,7 +60,12 @@ sample_champ() ->
 
 
 get_stat(Champ) ->
-    {0, 0, 0.0, 0.9}.
+    Players_list = [Player ||{team, _, Player} <- Champ],
+    Players = lists:foldl(fun(A,B) -> A++B end,[],Players_list),
+    Players_len = erlang:length(Players),
+    {Age, Rating} = lists:foldl(fun({player,_,Age,Rating,_},{Tage,Trat}) -> {Tage +Age,Trat+Rating} end, {0,0},Players),
+    {length(Champ), Players_len, Age/Players_len, Rating/Players_len}.
+
 
 
 get_stat_test() ->
@@ -69,7 +74,9 @@ get_stat_test() ->
 
 
 filter_sick_players(Champ) ->
-    Champ.
+    Healthy=lists:map(fun({team, Name, Player}) -> 
+        {team, Name,lists:filter(fun({player, _,_,_,Health}) -> Health>=50 end, Player)} end, Champ),
+    [X||X = {team,_,Players} <- Healthy, length(Players) >= 5].
 
 
 filter_sick_players_test() ->
@@ -105,7 +112,9 @@ filter_sick_players_test() ->
 
 
 make_pairs(Team1, Team2) ->
-    [].
+    {team, _, Players1} = Team1,
+    {team, _, Players2} = Team2,
+    [{Name1, Name2} || {player, Name1, _, Rating1, _} <- Players1, {player, Name2, _, Rating2, _} <- Players2, Rating1 + Rating2 > 600].
 
 
 make_pairs_test() ->
