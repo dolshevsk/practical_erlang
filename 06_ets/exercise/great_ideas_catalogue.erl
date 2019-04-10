@@ -37,8 +37,7 @@ init() ->
 
 
 add_idea(Id, Title, Author, Rating, Description) ->
-    ets:insert(great_ideas_table, #idea{id = Id, title = Title, author = Author,
-                 rating = Rating, description = Description}),
+    ets:insert(great_ideas_table, #idea{id = Id, title = Title, author = Author, rating = Rating, description = Description}),
     ok.
 
 
@@ -49,17 +48,24 @@ get_idea(Id) ->
     end.
 
 ideas_by_author(Author) ->
-          MS = ets:fun2ms(fun(Idea = #idea{author =CheckAuthor})
-            when Author =:= CheckAuthor   -> Idea end),
+          MS = ets:fun2ms(fun(Idea = #idea{})
+            when Idea#idea.author =:= Author   -> Idea end),
             ets:select(great_ideas_table, MS).
 
 
 ideas_by_rating(Rating) ->
-     MS = ets:fun2ms(fun(Idea = #idea{rating =CheckRating})
-            when CheckRating >= Rating   -> Idea end),
+     MS = ets:fun2ms(fun(Idea = #idea{})
+            when Idea#idea.rating >= Rating   -> Idea end),
             ets:select(great_ideas_table, MS).
 
 
 get_authors() ->
-    MS = ets:fun2ms(fun(#idea{author= Author}) -> Author end),
-            Authors = ets:select(great_ideas_table, MS).
+    MS = ets:fun2ms(fun(#idea{author=Author}) -> Author end),
+    Authors = ets:select(great_ideas_table, MS),
+    Au = lists:usort(Authors),
+    List = lists:map(fun (Author) -> {Author,length(ideas_by_author(Author))} end , Au),
+    lists:sort(fun({N1, I}, {N2, I}) -> N1 < N2; ({_, I1}, {_, I2}) -> I1 > I2 end, List).
+      
+
+
+      
