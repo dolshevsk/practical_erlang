@@ -11,92 +11,75 @@
 
 start_link() -> gen_server:start_link({local, manager}, ?MODULE, [], []).
 
+init([]) -> {ok, #state{}}.
 
 
 create_room(RoomName) ->
     {ok, RoomPid} = chat_room:start_link(),
     Room = {RoomName, RoomPid},
-    gen_server:cast(manager, {add_room, Room}),
+    gen_server:cast(manager, {create_room, Room}),
     Room.
-
 
 get_rooms() ->
     gen_server:call(manager, get_rooms).
 
-
-
 add_user(RoomPid, UserName, UserPid) ->
     gen_server:call(manager, {add_user, {RoomPid, UserName, UserPid}}).
-
-
 
 remove_user(RoomPid, UserPid) ->
     gen_server:call(manager, {remove_user, RoomPid, UserPid}).
 
-
 get_users(RoomPid) ->
     gen_server:call(manager, {get_users, RoomPid}).
-
 
 send_message(RoomPid, UserName, Msg) ->
     gen_server:call(manager, {send_message, {RoomPid, UserName, Msg}}).
 
-
 get_history(RoomPid) ->
     gen_server:call(manager, {get_history, RoomPid}).
 
-
 %%% HANDLE CALL %%%
 
-init([]) ->
-    {ok, #state{rooms = maps:new()}}.
-
-
 handle_call(get_rooms, _From, #state{rooms = Rooms} = State) ->
-    Reply = maps:values(Rooms),
+    Reply = maps:fold(fun(K,V,Acc) -> [{V, K}|Acc] end, [], Rooms),
     {reply, Reply, State};
 
 handle_call({add_user, {RoomPid, UserName, UserPid}}, _From, #state{rooms = Rooms} = State) ->
-    Reply = case maps:find(RoomPid, Rooms) of
-                {ok, _Room} -> chat_room:add_user(RoomPid, UserName, UserPid), ok;
-                error -> {error, room_not_found}
-            end,
-    {reply, Reply, State};
+           case maps:find(RoomPid, Rooms) of
+                {ok, _RoomName} -> {reply, chat_room:add_user(RoomPid, UserName, UserPid), State};
+                error -> {reply, {error, room_not_found}, State}
+            end;
 
 handle_call({remove_user, RoomPid, UserPid}, _From, #state{rooms = Rooms} = State) ->
-    Reply = case maps:find(RoomPid, Rooms) of
-                {ok, _Room} -> chat_room:remove_user(RoomPid, UserPid);
-                error -> {error, room_not_found}
-            end,
-    {reply, Reply, State};
+             case maps:find(RoomPid, Rooms) of
+                {ok, _RoomName} -> {reply, chat_room:remove_user(RoomPid, UserPid), State};
+                error -> {reply, {error, room_not_found}, State}
+            end;
 
 handle_call({get_users, RoomPid}, _From, #state{rooms = Rooms} = State) ->
-    Reply = case maps:find(RoomPid, Rooms) of
-                {ok, _Room} -> {ok, chat_room:get_users(RoomPid)};
-                error -> {error, room_not_found}
-            end,
-    {reply, Reply, State};
+            case maps:find(RoomPid, Rooms) of
+                {ok, _RoomName} -> {reply, {ok, chat_room:get_users(RoomPid)}, State};
+                error -> {reply, {error, room_not_found}, State}
+            end;
 
 handle_call({send_message, {RoomPid, UserName, Msg}}, _From, #state{rooms = Rooms} = State) ->
-    Reply = case maps:find(RoomPid, Rooms) of
-                {ok, _Room} -> chat_room:add_message(RoomPid, UserName, Msg);
-                error -> {error, room_not_found}
-            end,
-    {reply, Reply, State};
+            case maps:find(RoomPid, Rooms) of
+                {ok, _RoomName} -> {reply, chat_room:add_message(RoomPid, UserName, Msg), State};
+                error -> {reply, {error, room_not_found}, State}
+            end;
 
 handle_call({get_history, RoomPid}, _From, #state{rooms = Rooms} = State) ->
-    Reply = case maps:find(RoomPid, Rooms) of
-                {ok, _Room} -> {ok, chat_room:get_history(RoomPid)};
-                error -> {error, room_not_found}
-            end,
-    {reply, Reply, State}.
+            case maps:find(RoomPid, Rooms) of
+                {ok, _RoomName} -> {reply, {ok, chat_room:get_history(RoomPid)}, State};
+                error -> {reply, {error, room_not_found}, State}
+            end.
 
 %%% HANDLE CAST %%%
 
-handle_cast({add_room, Room}, #state{rooms = Rooms} = State) ->
-    {_, RoomPid} = Room,
-    Rooms2 = maps:put(RoomPid, Room, Rooms),
-    {noreply, State#state{rooms = Rooms2}}.
+handle_cast({create_room, {RoomName, RoomPid}}, #state{rooms = Rooms} = State) ->
+    UpdRooms = maps:put(RoomPid, RoomName, Rooms),
+    NewState = State#state{rooms = UpdRooms},
+    {noreply, NewState}.
 
 handle_info(Msg, State) ->
     io:format("Unexpected message: ~p~n", [Msg]),

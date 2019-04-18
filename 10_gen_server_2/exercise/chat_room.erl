@@ -54,7 +54,7 @@ handle_cast({add_user, {UserName, UserPid}}, #room{users = Users} = State) ->
     {noreply, NewState};
 
 handle_cast({add_message, {UserName, Msg}}, #room{users = Users, history = History} = State) ->
-    lists:foreach(fun(User) -> chat_user:add_message(User, UserName, Msg) end, maps:keys(Users)),
+    lists:foreach(fun(UserPid) -> chat_user:add_message(UserPid, UserName, Msg) end, maps:keys(Users)),
     NewState = State#room{history= [{UserName, Msg} | History]},
     {noreply, NewState}.
 
