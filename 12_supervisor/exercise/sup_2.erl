@@ -6,15 +6,6 @@ start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 
-add_worker(WorkerId) ->
-    supervisor:start_child(?MODULE, spec(WorkerId)).
-
-
-remove_worker(WorkerId) ->
-    supervisor:terminate_child(?MODULE, WorkerId),
-    supervisor:delete_child(?MODULE, WorkerId).
-
-
 init(_Args) ->
 
     SupervisorSpecification = #{
@@ -32,3 +23,11 @@ spec(WorkerId) ->
       type => worker,
       modules => [worker]
      }.
+
+add_worker(WorkerId) ->
+    supervisor:start_child(?MODULE, spec(WorkerId)).
+
+
+remove_worker(WorkerId) ->
+    supervisor:terminate_child(?MODULE, WorkerId),
+    supervisor:delete_child(?MODULE, WorkerId).
