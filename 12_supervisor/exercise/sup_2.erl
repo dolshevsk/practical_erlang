@@ -13,39 +13,24 @@ init(_Args) ->
         intensity => 10,
         period => 60},
 
-    ChildSpecifications = [
-        #{
-            id => worker_3,
-            start => {worker, start_link, [3]},
-            restart => permanent, % permanent | transient | temporary
-            shutdown => 2000,
-            type => worker, % worker | supervisor
-            modules => [worker]
-        },
+    ChildSpecifications = [childSpecifications(worker_3), childSpecifications(worker_4) ],
 
-        #{
-            id => worker_4,
+    {ok, {SupervisorSpecification, ChildSpecifications}}.
+
+childSpecifications(Worker) ->
+    #{
+            id => Worker,
             start => {worker, start_link, [4]},
             restart => permanent, 
             shutdown => 2000,
             type => worker, 
             modules => [worker]
-        }
-    ],
+        }.
 
-    {ok, {SupervisorSpecification, ChildSpecifications}}.
 
 add_worker(Id) ->
     supervisor:start_child(
-        ?MODULE,
-        #{
-            id => Id,
-            start => {worker, start_link, [Id]},
-            restart => permanent, 
-            shutdown => 2000,
-            type => worker, 
-            modules => [worker]
-        }
+        ?MODULE, childSpecifications(Id)
     ).
 
 
