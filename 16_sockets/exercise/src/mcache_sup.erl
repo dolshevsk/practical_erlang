@@ -16,13 +16,6 @@ init(_Args) ->
 
     ChildSpecifications =
         [
-         #{id => mcache,
-           start => {mcache, start_link, []},
-           restart => permanent, 
-           shutdown => 2000, 
-           type => worker,
-           modules => [mcache]
-          },
          #{id => server,
            start => {mcache_server, start_link, []},
            restart => permanent,
