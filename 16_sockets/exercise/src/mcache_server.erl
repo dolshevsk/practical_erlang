@@ -44,7 +44,7 @@ parse(MsgBin) ->
         [<<"REPLACE">>, Tail] -> {replace, params(Tail)};
         [<<"APPEND">>, Tail] -> {append, params(Tail)};
         [<<"PREPEND">>, Tail] -> {prepend, params(Tail)};
-        _ -> unknown
+        _ -> unexpected
     end.
 
 params(Tail) ->
@@ -69,7 +69,15 @@ handle_call({get, Key}, _From, State) ->
     {reply, Reply, State};
 
 handle_call({gets, Keys}, _From, State) -> 
-    ok;
+    Res = lists:foldr(
+        fun(Key, Acc) -> 
+            case maps:get(Key, State, <<"NOT FOUND">>) of
+                Value = <<"NOT FOUND">> ->  [<<"VALUE ", Key/binary," ",Value/binary, "\r\n">>|Acc];
+                Value -> [<<"VALUE ", Key/binary," ",Value/binary, "\r\n">>|Acc]
+            end end,
+            [], Keys),
+        Reply = binary:list_to_bin([Res|[<<"END">>]]),
+        {reply, Reply, State};
 
 handle_call({delete, Key}, _From, State) ->
     case maps:find(Key, State) of
@@ -82,18 +90,18 @@ handle_call({delete, Key}, _From, State) ->
             {reply, Reply, State}
     end;
 
-handle_call({add, Key, Value}, _From, State) ->
+handle_call({add, {Key, Value}}, _From, State) ->
     case maps:find(Key, State) of
-        {ok, Value} -> 
+        {ok, _Value} -> 
             Reply = <<"EXISTS">>,
             {reply, Reply, State};
         error -> 
-            New_State = maps:put(Key, Value),
+            New_State = maps:put(Key, Value, State),
             Reply = <<"STORED">>,
             {reply, Reply, New_State}
     end;
 
-handle_call({replace, Key, Value}, _From, State) ->
+handle_call({replace, {Key, Value}}, _From, State) ->
     case maps:find(Key, State) of
         {ok, _Value} -> 
             New_State = maps:update(Key, Value, State),
@@ -104,7 +112,7 @@ handle_call({replace, Key, Value}, _From, State) ->
             {reply, Reply, State}
     end;
 
-handle_call({append, Key, Value}, _From, State) ->
+handle_call({append, {Key, Value}}, _From, State) ->
     case maps:find(Key, State) of
         {ok, OldValue} -> 
             NewValue = <<OldValue/binary, Value/binary>>,
@@ -116,7 +124,7 @@ handle_call({append, Key, Value}, _From, State) ->
             {reply, Reply, State}
     end;
 
-handle_call({append, Key, Value}, _From, State) ->
+handle_call({prepend, {Key, Value}}, _From, State) ->
     case maps:find(Key, State) of
         {ok, OldValue} -> 
             NewValue = <<Value/binary, OldValue/binary>>,
@@ -128,7 +136,7 @@ handle_call({append, Key, Value}, _From, State) ->
             {reply, Reply, State}
     end;
 
-handle_call(unknown, _From, State) ->
+handle_call(unexpected, _From, State) ->
     {reply, <<"UNKNOWN REQUEST">>, State}.
 
 handle_cast(_Any, State) ->

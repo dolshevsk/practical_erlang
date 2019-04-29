@@ -3,7 +3,7 @@
   {description, "mcache app"},
   {vsn, "0.0"},
   {modules, [mcache_app, mcache_sup, mcache_server]},
-  {registered, []},
+  {registered, [mcache_server]},
   {applications, [kernel, stdlib]},
   {mod, {mcache_app, []}},
   {env, [
