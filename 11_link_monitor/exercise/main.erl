@@ -47,10 +47,10 @@ loop(Workers, #state{statistic=Stat, errors=Errors}=State) ->
 
 aggr(Data, #state{statistic=Stat} = State) ->
     NewStatistic = maps:fold(
-        fun (Name, Count, Acc) ->
-            case maps:find(Name, Stat) of
-                {ok, OldCount} -> Acc#{Name => OldCount + Count};
-                error -> Acc#{Name => Count}
+        fun(K, V, Acc) ->
+            case maps:find(K, Acc) of
+                {ok, VA} -> Acc#{K := VA + V};
+                error -> Acc#{K => V}
             end
         end,
     Stat,
