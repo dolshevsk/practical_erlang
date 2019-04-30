@@ -8,11 +8,14 @@
 -behaviour(application).
 
 %% Application callbacks
--export([start/2, stop/1]).
+-export([start/0, start/2, stop/1]).
 
 %%====================================================================
 %% API
 %%====================================================================
+start() ->
+    application:start(my_crypt),
+    ok.
 
 start(_StartType, _StartArgs) ->
     my_crypt_sup:start_link().

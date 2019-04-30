@@ -3,7 +3,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, encode/1, get_key/0, set_key/1, hash/1]).
+-export([start_link/0, encode/1, get_key/0, set_key/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 
@@ -12,7 +12,7 @@ start_link() ->
 
 init([]) ->
   {ok, Key} = application:get_env(my_crypt, encode_key),
-  State = #{key => Key, hashtable => Hashtable},
+  State = #{key => Key},
   {ok,State}.
 
 encode(Data)->
@@ -25,8 +25,8 @@ set_key(NewKey)->
   gen_server:cast(?MODULE,{set_key, NewKey}).
 
 
-handle_call(stop, _From, State) ->
-   {stop, normal, stopped, State};
+handle_call({encode, Data}, _From, State) ->
+    {reply, Reply, State};
 
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
